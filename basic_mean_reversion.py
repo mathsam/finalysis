@@ -3,9 +3,13 @@
 import matplotlib.pyplot as plt
 import simulator
 import numpy as np
+import trans
 
 def mean_reversion(mysim):
     return -mysim['ret1']
+    
+def mc_rmmid(mysim):
+    return trans.cs_remove_middle(-mysim['ret1'], 10)
 
 def mr_selectweekday(mysim):
     """
@@ -21,7 +25,7 @@ def mr_selectmonth(mysim):
     """
     do not trade on Jan, Jun, Aug, Sep
     """
-    avoid_months = [1, 6, 8, 9]
+    avoid_months = [1, 8, 9]
     alpha = -mysim['ret1']
     date_index= [idate.month in avoid_months for idate in mysim.dates]
     date_index = np.array(date_index, dtype=np.bool)
@@ -33,10 +37,13 @@ mysim = simulator.Simulator(mean_reversion,retain_alpha_sign=True,
                             universe='top500',delay=1)
 pnl = mysim.eval_pnl(mean_reversion)
 #pnl1 = mysim.eval_pnl(mr_selectweekday)
-pnl2 = mysim.eval_pnl(mr_selectmonth)
+#pnl2 = mysim.eval_pnl(mr_selectmonth)
+pnl_rmmid = mysim.eval_pnl(mc_rmmid)
 ##
 plt.plot(mysim.dates, np.cumsum(pnl), label='basic mean reversion')
-plt.plot(mysim.dates, np.cumsum(pnl2), label='avoid Jan/Jun/Aug/Sep')
+#plt.plot(mysim.dates, np.cumsum(pnl1), label='avoid Thursday')
+#plt.plot(mysim.dates, np.cumsum(pnl2), label='avoid Jan/Aug/Sep')
+plt.plot(mysim.dates, np.cumsum(pnl_rmmid), label='remove mid mean reversion')
 plt.legend(loc='best')
 plt.show()
 ##
