@@ -4,26 +4,29 @@ import matplotlib.pyplot as plt
 import time
 import datetime
 import pandas as pd
+import trans
 from pandas import DataFrame
 np.seterr(invalid='ignore')
 
 database_dir = '/media/junyic/Work/Trexquant/database/stocks/'
 stock_universes = ['top100', 'top250', 'top500', 'top1000',
                    'top2000','top2500','top3000']
-data_valid_range = {'ret1':[-1., 1.]}
+data_valid_range = {'ret1':[-10., 10.]}
 
 class Simulator(object):
     """
     evaluate PnL, ir and other statistics for a zero investment stategy
-    investing 1$ long and 1$ short positions
+    investing `capital` long and `capital` short positions, and use `capital` as
+    the unit in PnL
     """
     def __init__(self, alpha=None, retain_alpha_sign=True, universe='top2000',
-                 delay=1):
+                 delay=1, capital=1e6):
         if universe in stock_universes:
             self.universe = universe
             uni_file = database_dir + universe + '.adj_ammend.mat'
-            uni_var  = scipy.io.loadmat(uni_file)[universe].astype(np.int8)
-            self._uni_index = uni_var
+            uni_var  = scipy.io.loadmat(uni_file)[universe].astype(float)
+            uni_var[uni_var==0.] = np.nan
+            self._uni_mask = uni_var
         else:
             raise KeyError('stock universe does not exist')
         self.alpha = alpha
@@ -31,23 +34,44 @@ class Simulator(object):
         if not isinstance(delay, int) or delay < 0:
             raise ValueError('delay must be int and >=0')
         self.delay = delay
+        self.capital = capital
         self._market_data = {}
         
-        dates = scipy.io.loadmat(database_dir+'dates.adj_ammend.mat')['dates']
+        dates = Simulator._read_var('dates')
         dates = [time.strptime(str(idate),"[%Y%m%d]") for idate in dates]
         dates = [datetime.datetime(*idate[0:6]) for idate in dates]
         self.dates = dates
+        
+        open_p = Simulator._read_var('open',self._uni_mask)
+        open_ret1 = open_p/trans.ts_delay(open_p,1) - 1.0
+        self._market_data['open_ret1']  = open_ret1
+        
+        close_p = Simulator._read_var('close',self._uni_mask)
+        close_ret1 = close_p/trans.ts_delay(close_p,1) - 1.0
+        self._market_data['close_ret1'] = close_ret1
+        
+        vwap = Simulator._read_var('vwap', self._uni_mask)
+        vwap_ret1 = vwap/trans.ts_delay(vwap,1) - 1.0
+        self._market_data['vwap_ret1'] = vwap_ret1
         return
         
-    def __getitem__(self, varname):
+    @staticmethod
+    def _read_var(varname, mask=None):
+        var = scipy.io.loadmat(database_dir+varname+'.adj_ammend.mat')[varname]
+        if mask is not None:
+            var *= mask
+        return var
+        
+    def __call__(self, varname):
         """
         Usage:
-            mysim['ret1'] #returns a numpy array for that variable
+            mysim('ret1') #returns a reference of numpy array for the variable
+        Note:
+            as it returns a referece, use with care
         """
         if varname in self._market_data:
             return self._market_data[varname].copy()
-        varfile = database_dir + varname + '.adj_ammend.mat'
-        var = scipy.io.loadmat(varfile)[varname]*self._uni_index
+        var = Simulator._read_var(varname, self._uni_mask)
         
         #clean the data if valid ranges are specified
         if varname in data_valid_range:
@@ -55,12 +79,19 @@ class Simulator(object):
             var[var>data_valid_range[varname][1]] = np.nan
 
         self._market_data[varname] = var
-        return var.copy()
+        return var
+        
+    def __getitem__(self, varname):
+        """
+        Usage:
+            mysim['ret'] # returns a copy of numpy array for the variable
+        """
+        return self(varname).copy()
     
-    def eval_pnl(self,alpha=None, delay=1):
+    def eval_pnl(self,alpha=None,allow_frac=False):
         if alpha:
             self.alpha = alpha
-        signal = self.alpha(self)
+        signal = self.alpha(self).astype(float)
         # normalized the signal into zero investment strategy
         if not self.retain_alpha_sign:
             signal_mean = np.nanmean(signal, axis=0)[np.newaxis,:]
@@ -70,22 +101,22 @@ class Simulator(object):
         n_index  = (signal<0.).astype(np.int8)
         p_signal = signal*p_index
         n_signal = signal*n_index
-        p_norm    = np.nansum(p_signal, axis=0)[np.newaxis,:]
-        n_norm    = -np.nansum(n_signal, axis=0)[np.newaxis,:]
+        p_norm   = np.nansum(p_signal, axis=0)[np.newaxis,:]
+        n_norm   = -np.nansum(n_signal, axis=0)[np.newaxis,:]
         signal   = p_signal/p_norm + n_signal/n_norm
         
-        if self.delay > 0:
-            delayed_signal = np.empty_like(signal)
-            delayed_signal[:,delay:]  = signal[:,0:-delay]
-            delayed_signal[:,0:delay] = np.nan
-        else:
-            delayed_signal = signal
-
-        each_stock_return = self['ret1']*delayed_signal
+        delayed_signal = trans.ts_delay(signal, self.delay+1)
+        
+        if not allow_frac:
+            delayed_signal = self.capital*delayed_signal/self('vwap')
+            delayed_signal = np.trunc(delayed_signal)*self('vwap')/self.capital
+        
+        each_stock_return = self('vwap_ret1')*delayed_signal
+        
         pnl = np.nansum(each_stock_return, axis=0)
         pnl[np.isnan(pnl)] = 0.
         self.pnl = pnl
-        return pnl
+        return pnl, delayed_signal, each_stock_return
         
     def visualize(self, if_show=True):
         fig = plt.figure()
