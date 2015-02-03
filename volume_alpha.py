@@ -9,6 +9,6 @@ def volume_alpha(percent=20, lookback=10):
     return va_inner
 
 
-mysim = simulator.Simulator(None,retain_alpha_sign=False,
+mysim = simulator.Simulator(None,retain_alpha_sign=True,
                             universe='top2000',delay=1)
-pnl1, s1, eachret1 = mysim.eval_pnl(volume_alpha(10, 10))
+pnl1, s1, eachret1 = mysim.eval_pnl(volume_alpha(20, 10))

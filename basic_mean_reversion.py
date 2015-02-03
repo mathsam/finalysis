@@ -14,11 +14,11 @@ def mc_basic(which_ret, threshold=0.1):
         return alpha
     return mc_inner
 
-def mc_rmmid(which_ret, percent=10, threshold=0.1):
+def mc_rmmid(which_ret, percent=10, lower_threshold=0.02, upper_threshold=0.1):
     def mc_rmmid_inner(mysim):
         alpha = trans.cs_remove_middle(-mysim[which_ret], percent)
-        alpha[alpha>threshold]  = np.nan
-        alpha[alpha<-threshold] = np.nan
+        alpha[np.abs(alpha)> upper_threshold] = np.nan
+        alpha[np.abs(alpha)< lower_threshold] = np.nan
         return alpha
     return mc_rmmid_inner
 
@@ -47,7 +47,7 @@ def mr_selectmonth(mysim):
 
 mysim = simulator.Simulator(None,retain_alpha_sign=True,
                             universe='top2000',delay=1)
-pnl1, s1, eachret1 = mysim.eval_pnl(mc_rmmid('ret1',10, 1))
+pnl1, s1, eachret1, raw_ret = mysim.eval_pnl(mc_rmmid('ret1',10, 0.01, 0.2))
 #pnl2, s2, eachret2 = mysim.eval_pnl(mc_rmmid('open_ret1',10, 1))                            
 
 #pnl1, s1, eachret1 = mysim.eval_pnl(mc_rmmid('ret1',10,10))

@@ -53,18 +53,17 @@ def ts_identify_shock(alpha, percent=10, lookback=10, padding=np.nan):
         extremes[low_index, t] = -1.
         extremes[high_index,t] = 1.
     return extremes
+
     
-    
-    
-def ts_delay(alpha, num_days):
+def ts_delay(alpha, num_days, padding=np.nan):
     """
     delay alpha by `num_days`
     """
     delayed_signal = np.empty_like(alpha)
     if num_days >= 0:
         delayed_signal[:,num_days:]  = alpha[:,0:-num_days]
-        delayed_signal[:,0:num_days] = np.nan
+        delayed_signal[:,0:num_days] = padding
     else:
-        delayed_signal[:,:num_days]  = alpha[:,-num_days:]
-        delayed_signal[:,0:num_days] = np.nan
+        delayed_signal[:,:num_days] = alpha[:,-num_days:]
+        delayed_signal[:,num_days:] = padding
     return delayed_signal

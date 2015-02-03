@@ -53,7 +53,9 @@ class Simulator(object):
         vwap = Simulator._read_var('vwap', self._uni_mask)
         vwap_ret1 = vwap/trans.ts_delay(vwap,1) - 1.0
         Simulator._clean_data('vwap_ret1', vwap_ret1)
+        forward_vwap_ret1 = trans.ts_delay(vwap_ret1, -1-self.delay)
         self._market_data['vwap_ret1'] = vwap_ret1
+        self._market_data['forward_vwap_ret1'] = forward_vwap_ret1
         return
         
     @staticmethod
@@ -97,7 +99,8 @@ class Simulator(object):
     def eval_pnl(self,alpha=None,allow_frac=False):
         if alpha:
             self.alpha = alpha
-        signal = self.alpha(self).astype(float)
+        signal  = self.alpha(self).astype(float)
+        raw_ret = self('forward_vwap_ret1')*signal
         # normalized the signal into zero investment strategy
         if not self.retain_alpha_sign:
             signal_mean = np.nanmean(signal, axis=0)[np.newaxis,:]
@@ -111,18 +114,16 @@ class Simulator(object):
         n_norm   = -np.nansum(n_signal, axis=0)[np.newaxis,:]
         signal   = p_signal/p_norm + n_signal/n_norm
         
-        delayed_signal = trans.ts_delay(signal, self.delay+1)
-        
         if not allow_frac:
-            delayed_signal = self.capital*delayed_signal/self('vwap')
-            delayed_signal = np.trunc(delayed_signal)*self('vwap')/self.capital
-        
-        each_stock_return = self('vwap_ret1')*delayed_signal
-        
+            signal = self.capital*signal/self('vwap')
+            signal = np.trunc(signal)*self('vwap')/self.capital
+
+        each_stock_return = self('forward_vwap_ret1')*signal
+
         pnl = np.nansum(each_stock_return, axis=0)
         pnl[np.isnan(pnl)] = 0.
         self.pnl = pnl
-        return pnl, delayed_signal, each_stock_return
+        return pnl, signal, each_stock_return, raw_ret
         
     def visualize(self, if_show=True):
         fig = plt.figure()
