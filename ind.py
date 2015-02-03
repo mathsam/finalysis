@@ -1,0 +1,5 @@
+pnl_rolling = pd.rolling_mean(pnl_future['mean reversion pnl'], 10)
+fut_rolling = pd.rolling_mean(pnl_future[f1].shift(8), 10)
+corr = pd.rolling_corr(pnl_rolling, fut_rolling, 125, min_periods=30)
+corr.plot(label='lagged corr',ax=ax)
+plt.show()
