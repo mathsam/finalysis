@@ -48,7 +48,7 @@ def mr_selectmonth(mysim):
 mysim = simulator.Simulator(None,retain_alpha_sign=True,
                             universe='top2000',delay=1)
 pnl1, s1, eachret1 = mysim.eval_pnl(mc_rmmid('ret1',10, 1))
-pnl2, s2, eachret2 = mysim.eval_pnl(mc_rmmid('open_ret1',10, 1))                            
+#pnl2, s2, eachret2 = mysim.eval_pnl(mc_rmmid('open_ret1',10, 1))                            
 
 #pnl1, s1, eachret1 = mysim.eval_pnl(mc_rmmid('ret1',10,10))
 #pnl2, s2, eachret2 = mysim.eval_pnl(mc_rmmid('open_ret1',10,10))

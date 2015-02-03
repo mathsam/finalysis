@@ -14,12 +14,21 @@ for filename in fileset:
     fig = plot_xcorr(future_dir + filename, pnl_pd)
     fig.savefig(savedir + filename + '.png')
     
+## check individual
+f1 = 'CO1COMBComdty.PX_OPEN'
+fig, pnl_future = plot_xcorr(future_dir + f1, pnl_pd)
+pnl_future.columns = ['mean reversion pnl', f1]
+fig = plt.figure()
+ax  = fig.add_subplot(111)
+pnl_future.cumsum().plot(ax = ax)
+ax.set_xlim([np.datetime64('2006-01-01'), np.datetime64('2014-01-01')])
+    
 ## generate pnl dateframe
 def plot_xcorr(file_fullpath, pnl_pd):
     future_var = pd.read_table(file_fullpath,
                             skiprows=[0,1,2,3,4,5,6],
                             header=None,
-                            names=['date','value','null'],
+                            names=['date','future','null'],
                             index_col = 'date',
                             parse_dates=True,
                             dayfirst=True)
@@ -30,7 +39,7 @@ def plot_xcorr(file_fullpath, pnl_pd):
     
     # pnl and future_ret that shares the same dates
     pnl_common     = pnl_vs_future['pnl'].values
-    future_common  = pnl_vs_future['value'].values
+    future_common  = pnl_vs_future['future'].values
     lags1, r1, pr1 = stats_util.aggre_xcorr(pnl_common, future_common, 20, 1)
     lags5, r5, pr5 = stats_util.aggre_xcorr(pnl_common, future_common, 20, 5)
     lags10,r10,pr10= stats_util.aggre_xcorr(pnl_common, future_common, 20, 10)
@@ -48,4 +57,4 @@ def plot_xcorr(file_fullpath, pnl_pd):
     ax.set_xlabel('lag')
     ax.set_ylabel('correlation')
     plt.close()
-    return fig
+    return fig, pnl_vs_future

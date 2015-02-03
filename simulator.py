@@ -11,7 +11,7 @@ np.seterr(invalid='ignore')
 database_dir = '/media/junyic/Work/Trexquant/database/stocks/'
 stock_universes = ['top100', 'top250', 'top500', 'top1000',
                    'top2000','top2500','top3000']
-data_valid_range = {'ret1':[-10., 10.]}
+data_valid_range = {'ret1':[-1., 1.],'vwap_ret1':[-.5, .5]}
 
 class Simulator(object):
     """
@@ -52,6 +52,7 @@ class Simulator(object):
         
         vwap = Simulator._read_var('vwap', self._uni_mask)
         vwap_ret1 = vwap/trans.ts_delay(vwap,1) - 1.0
+        Simulator._clean_data('vwap_ret1', vwap_ret1)
         self._market_data['vwap_ret1'] = vwap_ret1
         return
         
@@ -60,7 +61,18 @@ class Simulator(object):
         var = scipy.io.loadmat(database_dir+varname+'.adj_ammend.mat')[varname]
         if mask is not None:
             var *= mask
+        Simulator._clean_data(varname, var)
         return var
+
+    @staticmethod
+    def _clean_data(varname, var):
+        """
+        clean the data if valid ranges are specified
+        """
+        if varname in data_valid_range:
+            var[var<data_valid_range[varname][0]] = np.nan
+            var[var>data_valid_range[varname][1]] = np.nan
+        return None
         
     def __call__(self, varname):
         """
@@ -72,12 +84,6 @@ class Simulator(object):
         if varname in self._market_data:
             return self._market_data[varname].copy()
         var = Simulator._read_var(varname, self._uni_mask)
-        
-        #clean the data if valid ranges are specified
-        if varname in data_valid_range:
-            var[var<data_valid_range[varname][0]] = np.nan
-            var[var>data_valid_range[varname][1]] = np.nan
-
         self._market_data[varname] = var
         return var
         

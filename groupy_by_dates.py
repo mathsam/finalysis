@@ -1,5 +1,5 @@
 ## analyse pnl each weekday and each month
-pnl_dates   = mysim.add_dates_keys(pnl=(pnl1+pnl2)/2.)
+pnl_dates   = mysim.add_dates_keys(pnl=pnl1)
 pnl_weekday = pnl_dates['pnl'].groupby(pnl_dates['weekday'])
 pnl_month   = pnl_dates['pnl'].groupby(pnl_dates['month'])
 pnl_year    = pnl_dates['pnl'].groupby(map(str,pnl_dates['year']))
