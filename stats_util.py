@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.stats import pearsonr
+from pandas import Series
+import pandas as pd
 
 def xcorr(x, y, maxlags=20):
     """
@@ -24,11 +26,11 @@ def xcorr(x, y, maxlags=20):
     pr   = np.empty_like(lags, dtype=float)
     for i, ilag in enumerate(lags):
         if ilag < 0:
-            r[i], pr[i] = pearsonr(x[:ilag],y[-ilag:])
+            r[i], pr[i] = pearsonr(valid_x[:ilag],valid_y[-ilag:])
         elif ilag ==0:
-            r[i], pr[i] = pearsonr(x,y)
+            r[i], pr[i] = pearsonr(valid_x,valid_y)
         elif ilag>0:
-            r[i], pr[i] = pearsonr(x[ilag:],y[:-ilag])
+            r[i], pr[i] = pearsonr(valid_x[ilag:],valid_y[:-ilag])
     return lags, r, pr
 
 def aggre_xcorr(x, y, maxlags=20, aggre_width=5):
@@ -113,3 +115,21 @@ def smooth(x, window_len=10, window='flat'):
         w = getattr(np, window)(window_len)
     y = np.convolve(w/w.sum(), s, mode='same')
     return y[window_len-1:-window_len+1]
+    
+def quantile(time_series, numbins=10):
+    """
+    given a pandas Series `time_series`, returns a  Series with the same index
+    but with the value corresponds to the quantile rank of the input Series
+    """
+    q, bins = pd.qcut(time_series, numbins, retbins=True)
+    bins      = bins.astype(np.float64)
+    bins[-1] += np.finfo(np.float64).eps
+    quantile_array = np.full(time_series.shape, np.nan)
+    binmid_array   = np.full(time_series.shape, np.nan)
+    for i in range(0, len(bins)-1):
+        ibin_index = (time_series.values>=bins[i]) & (time_series.values <bins[i+1])
+        quantile_array[ibin_index] = i
+        binmid_array[ibin_index]   = (bins[i]+bins[i+1])/2
+    quantile_series = Series(data=quantile_array, index=time_series.index)
+    binmid_series   = Series(data=binmid_array,   index=time_series.index)
+    return quantile_series, binmid_series
