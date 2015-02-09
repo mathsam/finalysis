@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import pearsonr
-from pandas import Series
+from pandas import Series, DataFrame
 import pandas as pd
 
 def xcorr(x, y, maxlags=20):
@@ -133,3 +133,12 @@ def quantile(time_series, numbins=10):
     quantile_series = Series(data=quantile_array, index=time_series.index)
     binmid_series   = Series(data=binmid_array,   index=time_series.index)
     return quantile_series, binmid_series
+
+def sort_by(x, y, numbins=15):
+    x_y = DataFrame({'x': x, 'y': y})
+    quantile_rank, binmid = quantile(x_y.x, numbins)
+    x_y['quantile'] = quantile_rank
+    x_y['bin']      = binmid
+    x_y_bybin      = x_y.groupby('bin')
+    y_bybin_mean = x_y_bybin.y.mean()
+    return y_bybin_mean.index.values, y_bybin_mean.values
