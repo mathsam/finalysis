@@ -67,3 +67,20 @@ def ts_delay(alpha, num_days, padding=np.nan):
         delayed_signal[:,:num_days] = alpha[:,-num_days:]
         delayed_signal[:,num_days:] = padding
     return delayed_signal
+    
+def ts_make_squarewave(alpha, width):
+    """
+    turn a continous signal into square wave. For example, if `wdith`=3
+    signal t1, t2, t3, t4, t5, t6, t7, ... becomes
+           t1, t1, t1, t4, t4, t4, t7, ...
+    """
+    squarewave = np.empty_like(alpha)
+    for t in range(0, alpha.shape[1], width):
+        squarewave[:,t:t+width] = alpha[:,t][:, np.newaxis]
+    return squarewave
+    
+def ts_mean(alpha, window_width = 5):
+    ave_alpha = np.full(alpha.shape, np.nan)
+    for i in range(window_width-1, alpha.shape[1]):
+        ave_alpha[:,i] = np.nanmean(alpha[:,i-window_width+1:i+1],1)
+    return ave_alpha                                
