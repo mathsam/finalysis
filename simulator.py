@@ -8,7 +8,7 @@ import trans
 from pandas import DataFrame
 np.seterr(invalid='ignore')
 
-database_dir = '/media/junyic/Work/Trexquant/database/stocks/'
+database_dir = '/home/junyic/Work/Trexquant/database/stocks/'
 stock_universes = ['top100', 'top250', 'top500', 'top1000',
                    'top2000','top2500','top3000']
 data_valid_range = {'ret1':[-1., 1.],'vwap_ret1':[-.5, .5],'ret5':[-1., 1.]}

@@ -142,3 +142,34 @@ def sort_by(x, y, numbins=15):
     x_y_bybin      = x_y.groupby('bin')
     y_bybin_mean = x_y_bybin.y.mean()
     return y_bybin_mean.index.values, y_bybin_mean.values
+    
+def time_to_lastshock(shock_signal):
+    """
+    given shock_signal consists of -1, 0, 1, turn it into the time to last shock
+    signal. For example, for shock_signal [0, 0, 1, 0, 0, -1, 0, 0, 0], return 
+    two arrays,
+    time2pshock (time to positive shock): [nan, nan, 0, 1, 2, nan, nan, ...]
+    time2nshock: [nan, nan, nan, nan, nan, 0, 1, 2, 3]
+    """
+    time2pshock = np.full(shock_signal.shape, np.nan)
+    time2nshock = np.full(shock_signal.shape, np.nan)
+    if shock_signal.ndim == 2:
+        for k in range(0, shock_signal.shape[0]):
+            p_days = np.nan
+            n_days = np.nan
+            for t in range(0, shock_signal.shape[1]):
+                if shock_signal[k, t] == 1:
+                    p_days = 0
+                    n_days = np.nan
+                elif shock_signal[k, t] == -1:
+                    n_days = 0
+                    p_days = np.nan
+                else:
+                    p_days += 1
+                    n_days += 1
+                if not np.isnan(p_days):
+                    time2pshock[k, t] = p_days
+                elif not np.isnan(n_days):
+                    time2nshock[k, t] = n_days
+        return time2pshock, time2nshock
+        

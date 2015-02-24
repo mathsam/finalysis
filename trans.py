@@ -59,14 +59,27 @@ def ts_delay(alpha, num_days, padding=np.nan):
     """
     delay alpha by `num_days`
     """
+    if num_days == 0:
+        return alpha.copy()
+        
     delayed_signal = np.empty_like(alpha)
-    if num_days >= 0:
-        delayed_signal[:,num_days:]  = alpha[:,0:-num_days]
-        delayed_signal[:,0:num_days] = padding
-    else:
-        delayed_signal[:,:num_days] = alpha[:,-num_days:]
-        delayed_signal[:,num_days:] = padding
-    return delayed_signal
+    if alpha.ndim == 2:
+        if num_days > 0:
+            delayed_signal[:,num_days:]  = alpha[:,0:-num_days]
+            delayed_signal[:,0:num_days] = padding
+        else:
+            delayed_signal[:,:num_days] = alpha[:,-num_days:]
+            delayed_signal[:,num_days:] = padding
+        return delayed_signal
+    
+    if alpha.ndim == 1:
+        if num_days > 0:
+            delayed_signal[num_days:]  = alpha[0:-num_days]
+            delayed_signal[0:num_days] = padding
+        else:
+            delayed_signal[:num_days] = alpha[-num_days:]
+            delayed_signal[num_days:] = padding
+        return delayed_signal
     
 def ts_make_squarewave(alpha, width):
     """
@@ -81,6 +94,6 @@ def ts_make_squarewave(alpha, width):
     
 def ts_mean(alpha, window_width = 5):
     ave_alpha = np.full(alpha.shape, np.nan)
-    for i in range(window_width-1, alpha.shape[1]):
-        ave_alpha[:,i] = np.nanmean(alpha[:,i-window_width+1:i+1],1)
+    for i in range(window_width-1, alpha.shape[-1]):
+        ave_alpha[...,i] = np.nanmean(alpha[...,i-window_width+1:i+1],alpha.ndim-1)
     return ave_alpha                                

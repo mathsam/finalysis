@@ -7,19 +7,18 @@ import trans
 #volume_mean = np.nanmean(mysim('volume'), 1)
 #volume_anomaly = mysim('volume')/volume_mean[:, np.newaxis]
 
-delayed_days = 10;
-time_range   = slice(None, None)
+#delayed_days = 120;
+#time_range   = slice(None, None)
 #x_y = DataFrame({'x':mysim('volume')[:,:-delayed_days].flatten(),
 #                 'y':eachret1[:,delayed_days:].flatten()})
-#x_y = DataFrame({'x':mysim('ret1').flatten(),
-#                 'y':raw_ret.flatten()})
-
-#ret1_delayed = trans.ts_delay(mysim('ret1'), delayed_days)
-#ret1_delayed[np.abs(ret1_delayed)<0.04] = np.nan
-#ret1         = mysim['ret1']
-#ret1[np.abs(ret1)<0.04] = np.nan
-x_y = DataFrame({'x':np.nanstd(mysim('ret1'),0),
-                 'y':pnl1})
+#ret1_shock = mysim['ret1']
+#ret1_shock[np.abs(ret1_shock)<0.05] = np.nan
+#ret_smoothed = trans.ts_mean(mysim('ret1'), 120)
+#x_y = DataFrame({'x':trans.ts_delay(ret_smoothed, delayed_days).flatten(),
+#                 'y':ret_smoothed.flatten()})
+                 
+x_y = DataFrame({'x': smoothed_ret.flatten(),
+                 'y': raw_ret.flatten()})   
 
 quantile_rank, binmid = stats_util.quantile(x_y.x, 20)
 x_y['quantile'] = quantile_rank
@@ -32,8 +31,8 @@ fig = plt.figure()
 ax  = fig.add_subplot(111)
 y_bybin_mean.sort(inplace=0)
 plt.plot(y_bybin_mean.index.values, y_bybin_mean.values, '--o')
-ax.set_xlabel('volume %d days ago' %delayed_days)
-ax.set_ylabel('momenHF_PnL (8 day delay)')
+ax.set_xlabel('ts_mean(ret1, %s)' %delayed_days)
+ax.set_ylabel('ave ret')
 #ax.set_xscale('log')
 plt.show()
 
