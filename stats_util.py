@@ -32,6 +32,31 @@ def xcorr(x, y, maxlags=20):
         elif ilag>0:
             r[i], pr[i] = pearsonr(valid_x[ilag:],valid_y[:-ilag])
     return lags, r, pr
+    
+def xcorr2d(x2d, y2d, maxlags_i = 20, maxlags_j = 20):
+    """
+    correlation between x2d[i+ilag, j+jlag] and y2d[i, j]
+    """
+    lags = np.zeros((2*maxlags_i+1, 2*maxlags_j+1))
+    r    = np.zeros((2*maxlags_i+1, 2*maxlags_j+1))
+    pr   = np.zeros((2*maxlags_i+1, 2*maxlags_j+1))
+    for i, ilag in enumerate(range(-maxlags_i, maxlags_i+1)):
+        for j, jlag in enumerate(range(-maxlags_j, maxlags_j+1)):
+            y2d_shifted = np.roll(y2d, ilag, 0)
+            if ilag<0:
+                y2d_shifted[ilag:,:] = np.nan
+            elif ilag>0:
+                y2d_shifted[:ilag,:] = np.nan
+            y2d_shifted = np.roll(y2d_shifted, jlag, 1)
+            if jlag<0:
+                y2d_shifted[:,jlag:] = np.nan
+            elif jlag>0:
+                y2d_shifted[:,:jlag] = np.nan
+            _, r[i,j], pr[i,j] = xcorr(x2d.flatten(), 
+                                               y2d_shifted.flatten(), 0)
+    lagsX, lagsY = np.meshgrid(np.arange(-maxlags_j, maxlags_j+1), 
+                               np.arange(-maxlags_i, maxlags_i+1))
+    return lagsX, lagsY, r, pr
 
 def aggre_xcorr(x, y, maxlags=20, aggre_width=5):
     if not (isinstance(x, np.ndarray) and 
